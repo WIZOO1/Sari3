@@ -1,193 +1,122 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sari3 Store</title>
+    
+    <!-- 1. Typography: Tajawal (Best for TN Market) -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    
+    <!-- 2. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 3. PapaParse (Library for CSV) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Custom Config -->
     <style>
-        body { font-family: 'Cairo', sans-serif; background-color: #f3f4f6; padding-bottom: 80px; }
-        .product-card { transition: transform 0.2s; }
-        .product-card:active { transform: scale(0.98); }
-        /* Hide scrollbar for category list */
+        body { font-family: 'Tajawal', sans-serif; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 text-gray-900 antialiased pb-32">
 
-    <!-- HEADER -->
-    <div class="bg-white shadow-sm p-4 sticky top-0 z-50">
-        <div class="flex justify-between items-center">
-            <h1 class="text-xl font-bold text-gray-800" id="store-name">Loading Store...</h1>
-            <div class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold">Open</div>
+    <!-- TOP NAVIGATION (Glass Effect) -->
+    <nav class="fixed top-0 left-0 w-full bg-white/90 backdrop-blur-md border-b border-gray-100 z-50">
+        <div class="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
+            <!-- Brand Name -->
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">S</div>
+                <h1 id="store-name" class="font-bold text-lg tracking-tight">Sari3 Store</h1>
+            </div>
+            
+            <!-- Mini Cart Badge -->
+            <div class="relative">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+                <span id="cart-count-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="max-w-md mx-auto pt-20 px-4">
+        
+        <!-- Loading State (Skeleton) -->
+        <div id="loader" class="animate-pulse space-y-4">
+            <div class="h-48 bg-gray-200 rounded-2xl w-full"></div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="h-40 bg-gray-200 rounded-xl"></div>
+                <div class="h-40 bg-gray-200 rounded-xl"></div>
+            </div>
+        </div>
+
+        <!-- Product Grid (Initially Empty) -->
+        <div id="product-grid" class="grid grid-cols-2 gap-3 hidden">
+            <!-- Products injected here -->
+        </div>
+
+    </main>
+
+    <!-- BOTTOM FLOATING ACTION BAR -->
+    <div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 p-4 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <div class="max-w-md mx-auto flex items-center justify-between gap-4">
+            <div class="flex flex-col">
+                <span class="text-xs text-gray-400 font-medium uppercase">Total</span>
+                <span id="total-price" class="text-xl font-extrabold text-gray-900">0.00 TND</span>
+            </div>
+            <button onclick="checkout()" class="flex-1 bg-green-600 active:bg-green-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-green-200 transition-transform active:scale-95 flex items-center justify-center gap-2">
+                <span>Commander</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+            </button>
         </div>
     </div>
 
-    <!-- CATEGORY FILTER -->
-    <div class="flex overflow-x-auto p-4 gap-2 no-scrollbar" id="category-container"></div>
-
-    <!-- PRODUCT GRID -->
-    <div class="px-4 pb-4 grid grid-cols-1 gap-4" id="product-container">
-        <div class="text-center py-10 text-gray-500">
-            <p id="loading-text">Connecting to Sari3 Cloud...</p>
-        </div>
-    </div>
-
-    <!-- CART BAR -->
-    <div id="cart-bar" class="fixed bottom-4 left-4 right-4 bg-gray-900 text-white p-4 rounded-xl shadow-2xl flex justify-between items-center hidden transition-all duration-300 transform translate-y-20 z-50">
-        <div class="flex flex-col">
-            <span class="text-xs text-gray-400">Total Order</span>
-            <span class="font-bold text-lg"><span id="total-price">0.000</span> TND</span>
-        </div>
-        <button onclick="checkout()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2">
-            <span>Order WhatsApp</span>
-        </button>
-    </div>
-
+    <!-- JAVASCRIPT LOGIC -->
     <script>
-        // *** CONFIGURATION ***
-        // This is YOUR specific Master Registry Link
-        const MASTER_REGISTRY_URL = "https://docs.google.com/spreadsheets/d/1t57EXGbh1iocTGIh82j3uWqpV0zuv7Mj9RTi5w6YvjI/export?format=csv";
-        
-        let cart = [];
-        let STORE_PHONE = "";
-        let STORE_NAME = "";
+        // --- 1. MOCK DATA (Temporary) ---
+        const mockProducts = [
+            { id: 1, name: "Harissa Arbi", price: 12.500, img: "https://placehold.co/300x300/orange/white?text=Harissa" },
+            { id: 2, name: "Zit Zitoune (1L)", price: 28.000, img: "https://placehold.co/300x300/green/white?text=Zit" },
+            { id: 3, name: "Mlewi (Pack 5)", price: 7.500, img: "https://placehold.co/300x300/yellow/black?text=Mlewi" },
+        ];
 
-        // --- 1. INITIALIZE SAAS LOGIC ---
-        
-        // This gets the '?store=demo' from the URL
-        const urlParams = new URLSearchParams(window.location.search);
-        let currentSlug = urlParams.get('store');
-
-        // FOR TESTING IN SPCK: 
-        // Since Spck doesn't let you easily change URL, we force 'demo' if none exists.
-        if (!currentSlug) {
-            console.log("No store slug found, defaulting to 'demo' for testing");
-            currentSlug = "demo"; 
-        }
-
-        // Fetch Master Registry
-        Papa.parse(MASTER_REGISTRY_URL, {
-            download: true,
-            header: true,
-            complete: function(results) {
-                const registry = results.data;
-                console.log("Registry Loaded:", registry); // Debugging
-
-                // Find the store in the list
-                const myStore = registry.find(row => row.slug === currentSlug);
-
-                if (myStore) {
-                    // STORE FOUND!
-                    STORE_NAME = myStore.store_name;
-                    STORE_PHONE = myStore.phone;
-                    document.getElementById('store-name').innerText = STORE_NAME;
-                    
-                    // Now Load the Products for this specific store
-                    loadProducts(myStore.sheet_url);
-                } else {
-                    document.getElementById('product-container').innerHTML = `
-                        <div class='p-10 text-center text-red-500'>
-                            <h1 class='text-2xl font-bold'>404</h1>
-                            <p>Store '${currentSlug}' Not Found</p>
-                            <p class='text-sm text-gray-400 mt-4'>Make sure you added it to the Registry Sheet</p>
-                        </div>`;
-                    document.getElementById('store-name').innerText = "Error";
-                }
-            },
-            error: function(err) {
-                alert("Error reading Master Registry. Check your link.");
-            }
-        });
-
-        // --- 2. LOAD PRODUCTS FUNCTION ---
-        function loadProducts(sheetUrl) {
-            Papa.parse(sheetUrl, {
-                download: true,
-                header: true,
-                complete: function(results) {
-                    renderStore(results.data);
-                }
-            });
-        }
-
-        // --- 3. RENDER UI ---
-        function renderStore(products) {
-            const container = document.getElementById('product-container');
-            const catContainer = document.getElementById('category-container');
+        // --- 2. RENDER FUNCTION ---
+        function initStore() {
+            const grid = document.getElementById('product-grid');
+            const loader = document.getElementById('loader');
             
-            container.innerHTML = "";
-            catContainer.innerHTML = `<button class="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm whitespace-nowrap">All</button>`;
-
-            // Categories
-            const categories = [...new Set(products.map(p => p.Category).filter(Boolean))];
-            categories.forEach(cat => {
-                catContainer.innerHTML += `<button class="bg-white border text-gray-600 px-4 py-2 rounded-lg text-sm whitespace-nowrap">${cat}</button>`;
-            });
-
-            // Products
-            products.forEach(product => {
-                if(!product.Name) return; 
-                const imgUrl = product.Image || "https://via.placeholder.com/150";
-                
-                const card = document.createElement('div');
-                card.className = "bg-white p-3 rounded-2xl shadow-sm product-card flex gap-4 items-center";
-                
-                card.innerHTML = `
-                    <div class="h-24 w-24 flex-shrink-0">
-                        <img src="${imgUrl}" class="w-full h-full object-cover rounded-xl" alt="${product.Name}">
-                    </div>
-                    <div class="flex-1 flex flex-col justify-between h-24 py-1">
-                        <div>
-                            <h3 class="font-bold text-gray-800 leading-tight">${product.Name}</h3>
-                            <p class="text-xs text-gray-500 mt-1">${product.Category}</p>
-                        </div>
-                        <div class="flex justify-between items-end">
-                            <span class="font-bold text-green-600 text-lg">${product.Price} <span class="text-xs">TND</span></span>
-                            <button onclick="addToCart('${product.Name}', ${product.Price})" class="bg-gray-100 hover:bg-green-100 text-gray-800 hover:text-green-600 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xl">+</button>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        // --- 4. CART & CHECKOUT ---
-        function addToCart(name, price) {
-            cart.push({ name, price });
-            updateCartUI();
-        }
-
-        function updateCartUI() {
-            const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0);
-            document.getElementById('total-price').innerText = total.toFixed(3);
+            // Clear loader
+            loader.style.display = 'none';
+            grid.classList.remove('hidden');
             
-            const cartBar = document.getElementById('cart-bar');
-            if (cart.length > 0) {
-                cartBar.classList.remove('hidden', 'translate-y-20');
-            }
+            // Render Items
+            grid.innerHTML = mockProducts.map(product => `
+                <div class="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 flex flex-col">
+                    <div class="relative w-full aspect-square bg-gray-100 rounded-xl overflow-hidden mb-2">
+                        <img src="${product.img}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="px-1 flex-grow">
+                        <h3 class="font-bold text-gray-800 text-sm leading-tight mb-1">${product.name}</h3>
+                        <p class="text-green-700 font-bold text-sm">${product.price.toFixed(3)} TND</p>
+                    </div>
+                    <button class="mt-2 w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-800 font-medium py-2 rounded-lg text-xs transition-colors">
+                        + Ajouter
+                    </button>
+                </div>
+            `).join('');
         }
 
+        // Run Mock Render
+        setTimeout(initStore, 1000); 
+        
         function checkout() {
-            const summary = cart.reduce((acc, item) => {
-                acc[item.name] = (acc[item.name] || 0) + 1;
-                return acc;
-            }, {});
-
-            let message = `Salam *${STORE_NAME}*! \n\nI want to order: \n`;
-            
-            Object.keys(summary).forEach(key => {
-                message += `▪️ ${summary[key]}x ${key} \n`;
-            });
-
-            const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0);
-            message += `\n💰 *Total: ${total.toFixed(3)} TND* \n`;
-            message += `📍 My Address is: `;
-
-            window.open(`https://wa.me/${STORE_PHONE}?text=${encodeURIComponent(message)}`, '_blank');
+            alert("This will open WhatsApp!");
         }
     </script>
 </body>
