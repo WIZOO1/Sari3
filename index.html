@@ -1,75 +1,76 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sari3 Store</title>
     
-    <!-- 1. Typography: Tajawal (Best for TN Market) -->
+    <!-- Typography: Tajawal (Essential for Arabic/French harmony) -->
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     
-    <!-- 2. Tailwind CSS -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 3. PapaParse (Library for CSV) -->
+    <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
-    <!-- Custom Config -->
     <style>
-        body { font-family: 'Tajawal', sans-serif; }
+        body { font-family: 'Tajawal', sans-serif; -webkit-tap-highlight-color: transparent; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Smooth fade for modal */
+        .fade-enter { opacity: 0; transform: translateY(20px); }
+        .fade-enter-active { opacity: 1; transform: translateY(0); transition: opacity 0.3s, transform 0.3s; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900 antialiased pb-32">
+<body class="bg-gray-50 text-gray-900 antialiased pb-32 transition-colors duration-300">
 
-    <!-- TOP NAVIGATION (Glass Effect) -->
-    <nav class="fixed top-0 left-0 w-full bg-white/90 backdrop-blur-md border-b border-gray-100 z-50">
+    <!-- TOP NAVIGATION -->
+    <nav class="fixed top-0 left-0 w-full bg-white/95 backdrop-blur-md border-b border-gray-100 z-40">
         <div class="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
-            <!-- Brand Name -->
             <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">S</div>
-                <h1 id="store-name" class="font-bold text-lg tracking-tight">Sari3 Store</h1>
+                <div class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm">S</div>
+                <h1 class="font-bold text-lg tracking-tight" data-i18n="storeTitle">Sari3 Store</h1>
             </div>
             
-            <!-- Mini Cart Badge -->
-            <div class="relative">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                </svg>
-                <span id="cart-count-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
-            </div>
+            <!-- Language Switcher -->
+            <button onclick="toggleLanguage()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1.5 rounded-full text-xs font-bold transition-colors border border-gray-200 flex items-center gap-1">
+                <span id="lang-icon">🇹🇳</span> <span id="lang-text">Arabe</span>
+            </button>
         </div>
     </nav>
 
-    <!-- MAIN CONTENT AREA -->
+    <!-- MAIN CONTENT -->
     <main class="max-w-md mx-auto pt-20 px-4">
         
-        <!-- Loading State (Skeleton) -->
+        <!-- Loader -->
         <div id="loader" class="animate-pulse space-y-4">
-            <div class="h-48 bg-gray-200 rounded-2xl w-full"></div>
+            <div class="h-40 bg-gray-200 rounded-xl w-full"></div>
             <div class="grid grid-cols-2 gap-3">
-                <div class="h-40 bg-gray-200 rounded-xl"></div>
-                <div class="h-40 bg-gray-200 rounded-xl"></div>
+                <div class="h-48 bg-gray-200 rounded-xl"></div>
+                <div class="h-48 bg-gray-200 rounded-xl"></div>
             </div>
         </div>
 
-        <!-- Product Grid (Initially Empty) -->
-        <div id="product-grid" class="grid grid-cols-2 gap-3 hidden">
-            <!-- Products injected here -->
+        <!-- Product Grid -->
+        <div id="product-grid" class="grid grid-cols-2 gap-3 hidden pb-4">
+            <!-- Items injected here -->
         </div>
 
     </main>
 
-    <!-- BOTTOM FLOATING ACTION BAR -->
-    <div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 p-4 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+    <!-- BOTTOM BAR (Sticky) -->
+    <div id="bottom-bar" class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 p-4 z-40 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] transition-transform duration-300 translate-y-full">
         <div class="max-w-md mx-auto flex items-center justify-between gap-4">
-            <div class="flex flex-col">
-                <span class="text-xs text-gray-400 font-medium uppercase">Total</span>
-                <span id="total-price" class="text-xl font-extrabold text-gray-900">0.00 TND</span>
+            <div class="flex flex-col cursor-pointer" onclick="toggleCartModal()">
+                <div class="flex items-center gap-1 text-xs text-gray-500 font-medium uppercase">
+                    <span data-i18n="total">Total</span> 
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+                </div>
+                <span id="total-price" class="text-xl font-extrabold text-gray-900">0.000 TND</span>
             </div>
-            <button onclick="checkout()" class="flex-1 bg-green-600 active:bg-green-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-green-200 transition-transform active:scale-95 flex items-center justify-center gap-2">
-                <span>Commander</span>
+            <button onclick="openWhatsApp()" class="flex-1 bg-green-600 active:bg-green-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-green-200 transition-transform active:scale-95 flex items-center justify-center gap-2">
+                <span data-i18n="orderBtn">Commander</span>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                 </svg>
@@ -77,47 +78,262 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT LOGIC -->
+    <!-- CART REVIEW MODAL (Hidden by default) -->
+    <div id="cart-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end justify-center backdrop-blur-sm" onclick="toggleCartModal()">
+        <div class="bg-white w-full max-w-md rounded-t-2xl p-6 relative max-h-[80vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6"></div>
+            
+            <h2 class="text-xl font-bold mb-4" data-i18n="yourCart">Votre Panier</h2>
+            
+            <div id="cart-items-list" class="space-y-4 mb-6">
+                <!-- Cart items list here -->
+            </div>
+
+            <div class="border-t border-gray-100 pt-4 flex justify-between items-center mb-6">
+                <span class="font-bold text-gray-500" data-i18n="total">Total</span>
+                <span id="modal-total" class="font-bold text-2xl text-gray-900">0.000 TND</span>
+            </div>
+
+            <button onclick="openWhatsApp()" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-8.683-2.031-.967-.272-.297-.471-.446-.92-.446-.446 0-.966.173-1.465.718-.495.545-1.884 1.833-1.884 4.471 0 2.639 1.907 5.19 2.179 5.562.272.371 3.733 5.702 9.074 7.994 3.735 1.603 4.493 1.285 5.285 1.21.792-.074 1.758-.718 2.006-1.411.248-.694.248-1.288.173-1.412z"/></svg>
+                <span data-i18n="confirmWhatsapp">Confirmer sur WhatsApp</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT -->
     <script>
-        // --- 1. MOCK DATA (Temporary) ---
-        const mockProducts = [
+        // --- 1. CONFIG & STATE ---
+        const state = {
+            lang: 'fr', // 'fr' or 'ar'
+            cart: {},   // format: { productID: quantity }
+            products: []
+        };
+
+        const translations = {
+            fr: {
+                storeTitle: "Sari3 Store",
+                add: "Ajouter",
+                total: "Total",
+                orderBtn: "Commander",
+                yourCart: "Votre Panier",
+                confirmWhatsapp: "Envoyer sur WhatsApp",
+                emptyCart: "Votre panier est vide.",
+                currency: "TND",
+                langBtn: "Arabe"
+            },
+            ar: {
+                storeTitle: "متجر سريع",
+                add: "زيد للسلة",
+                total: "المجموع",
+                orderBtn: "عدي كومند",
+                yourCart: "القفة متاعك",
+                confirmWhatsapp: "بعث فالواتساب",
+                emptyCart: "القفة فارغة",
+                currency: "د.ت",
+                langBtn: "Français"
+            }
+        };
+
+        // --- 2. MOCK DATA (Replace with PapaParse later) ---
+        const mockData = [
             { id: 1, name: "Harissa Arbi", price: 12.500, img: "https://placehold.co/300x300/orange/white?text=Harissa" },
             { id: 2, name: "Zit Zitoune (1L)", price: 28.000, img: "https://placehold.co/300x300/green/white?text=Zit" },
             { id: 3, name: "Mlewi (Pack 5)", price: 7.500, img: "https://placehold.co/300x300/yellow/black?text=Mlewi" },
+            { id: 4, name: "Tabouna", price: 1.200, img: "https://placehold.co/300x300/brown/white?text=Tabouna" },
+            { id: 5, name: "Jben Arbi", price: 18.000, img: "https://placehold.co/300x300/white/black?text=Jben" },
         ];
 
-        // --- 2. RENDER FUNCTION ---
-        function initStore() {
-            const grid = document.getElementById('product-grid');
-            const loader = document.getElementById('loader');
-            
-            // Clear loader
-            loader.style.display = 'none';
-            grid.classList.remove('hidden');
-            
-            // Render Items
-            grid.innerHTML = mockProducts.map(product => `
-                <div class="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 flex flex-col">
-                    <div class="relative w-full aspect-square bg-gray-100 rounded-xl overflow-hidden mb-2">
-                        <img src="${product.img}" class="w-full h-full object-cover">
-                    </div>
-                    <div class="px-1 flex-grow">
-                        <h3 class="font-bold text-gray-800 text-sm leading-tight mb-1">${product.name}</h3>
-                        <p class="text-green-700 font-bold text-sm">${product.price.toFixed(3)} TND</p>
-                    </div>
-                    <button class="mt-2 w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-800 font-medium py-2 rounded-lg text-xs transition-colors">
-                        + Ajouter
-                    </button>
-                </div>
-            `).join('');
+        // --- 3. CORE FUNCTIONS ---
+
+        function init() {
+            state.products = mockData;
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('product-grid').classList.remove('hidden');
+            renderProducts();
         }
 
-        // Run Mock Render
-        setTimeout(initStore, 1000); 
-        
-        function checkout() {
-            alert("This will open WhatsApp!");
+        // Render the Grid
+        function renderProducts() {
+            const grid = document.getElementById('product-grid');
+            const t = translations[state.lang];
+            
+            grid.innerHTML = state.products.map(p => {
+                const qty = state.cart[p.id] || 0;
+                
+                // Button Logic: Show "Add" OR "Controls"
+                let buttonHTML = '';
+                if (qty === 0) {
+                    buttonHTML = `
+                        <button onclick="updateQty(${p.id}, 1)" class="mt-2 w-full bg-gray-100 hover:bg-green-50 text-gray-800 font-bold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-1 active:bg-green-200">
+                            <span>+</span> ${t.add}
+                        </button>`;
+                } else {
+                    buttonHTML = `
+                        <div class="mt-2 w-full flex items-center justify-between bg-green-600 text-white rounded-xl overflow-hidden h-10 shadow-md shadow-green-200">
+                            <button onclick="updateQty(${p.id}, -1)" class="h-full px-4 hover:bg-green-700 font-bold text-lg flex items-center justify-center">-</button>
+                            <span class="font-bold text-sm">${qty}</span>
+                            <button onclick="updateQty(${p.id}, 1)" class="h-full px-4 hover:bg-green-700 font-bold text-lg flex items-center justify-center">+</button>
+                        </div>`;
+                }
+
+                return `
+                <div class="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 flex flex-col h-full">
+                    <div class="relative w-full aspect-square bg-gray-100 rounded-xl overflow-hidden mb-2">
+                        <img src="${p.img}" class="w-full h-full object-cover" loading="lazy">
+                        ${qty > 0 ? `<div class="absolute top-2 right-2 bg-green-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-sm">${qty}</div>` : ''}
+                    </div>
+                    <div class="px-1 flex-grow flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-sm leading-tight mb-1">${p.name}</h3>
+                            <p class="text-green-700 font-bold text-sm">${p.price.toFixed(3)} <span class="text-xs text-gray-400">${t.currency}</span></p>
+                        </div>
+                        ${buttonHTML}
+                    </div>
+                </div>
+                `;
+            }).join('');
         }
+
+        // Handle Add/Remove Logic
+        function updateQty(id, change) {
+            const currentQty = state.cart[id] || 0;
+            const newQty = currentQty + change;
+            
+            if (newQty <= 0) {
+                delete state.cart[id];
+            } else {
+                state.cart[id] = newQty;
+            }
+
+            // Haptic Feedback (Android)
+            if (navigator.vibrate) navigator.vibrate(30);
+
+            // Re-render UI
+            renderProducts();
+            updateTotals();
+        }
+
+        // Update Bottom Bar
+        function updateTotals() {
+            let total = 0;
+            let count = 0;
+            
+            Object.keys(state.cart).forEach(id => {
+                const product = state.products.find(p => p.id == id);
+                const qty = state.cart[id];
+                if (product) {
+                    total += product.price * qty;
+                    count += qty;
+                }
+            });
+
+            const t = translations[state.lang];
+            document.getElementById('total-price').innerText = total.toFixed(3) + ' ' + t.currency;
+            document.getElementById('modal-total').innerText = total.toFixed(3) + ' ' + t.currency;
+
+            // Show/Hide Bottom Bar
+            const bar = document.getElementById('bottom-bar');
+            if (count > 0) {
+                bar.classList.remove('translate-y-full');
+            } else {
+                bar.classList.add('translate-y-full');
+            }
+        }
+
+        // --- 4. LANGUAGE SWITCHER ---
+        function toggleLanguage() {
+            state.lang = state.lang === 'fr' ? 'ar' : 'fr';
+            const isAr = state.lang === 'ar';
+            const t = translations[state.lang];
+
+            // 1. Update HTML Dir
+            document.documentElement.dir = isAr ? 'rtl' : 'ltr';
+            document.documentElement.lang = state.lang;
+
+            // 2. Update Static Text
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.innerText = t[key];
+            });
+
+            // 3. Update Button UI
+            document.getElementById('lang-text').innerText = t.langBtn;
+            document.getElementById('lang-icon').innerText = isAr ? '🇫🇷' : '🇹🇳';
+
+            // 4. Re-render Grid (to update buttons and currency)
+            renderProducts();
+            updateTotals();
+        }
+
+        // --- 5. MODAL & CHECKOUT ---
+        function toggleCartModal() {
+            const modal = document.getElementById('cart-modal');
+            const list = document.getElementById('cart-items-list');
+            const t = translations[state.lang];
+            
+            if (modal.classList.contains('hidden')) {
+                // Open Modal
+                if (Object.keys(state.cart).length === 0) return; // Don't open if empty
+
+                // Generate List HTML
+                let html = '';
+                Object.keys(state.cart).forEach(id => {
+                    const p = state.products.find(item => item.id == id);
+                    const qty = state.cart[id];
+                    html += `
+                        <div class="flex justify-between items-center border-b border-gray-50 pb-2">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-gray-100 w-12 h-12 rounded-lg overflow-hidden">
+                                    <img src="${p.img}" class="w-full h-full object-cover">
+                                </div>
+                                <div>
+                                    <p class="font-bold text-sm text-gray-800">${p.name}</p>
+                                    <p class="text-xs text-gray-500">${qty} x ${p.price.toFixed(3)}</p>
+                                </div>
+                            </div>
+                            <div class="font-bold text-green-700">
+                                ${(p.price * qty).toFixed(3)}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                list.innerHTML = html;
+                modal.classList.remove('hidden');
+            } else {
+                // Close Modal
+                modal.classList.add('hidden');
+            }
+        }
+
+        function openWhatsApp() {
+            const phone = "21650000000"; // Replace with variable later
+            const t = translations[state.lang];
+            let msg = state.lang === 'fr' 
+                ? "Bonjour, je voudrais commander :\n" 
+                : "سلام، نحب نعدي كومند :\n";
+
+            let total = 0;
+            Object.keys(state.cart).forEach(id => {
+                const p = state.products.find(item => item.id == id);
+                const qty = state.cart[id];
+                const lineTotal = p.price * qty;
+                total += lineTotal;
+                msg += `▪️ ${qty}x ${p.name} (${lineTotal.toFixed(3)})\n`;
+            });
+
+            msg += state.lang === 'fr' 
+                ? `\n*Total: ${total.toFixed(3)} TND*` 
+                : `\n*المجموع: ${total.toFixed(3)} د.ت*`;
+
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank');
+        }
+
+        // Start
+        setTimeout(init, 500);
+
     </script>
 </body>
 </html>
